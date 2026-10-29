@@ -1,77 +1,41 @@
 ---
 name: cyberpunk-storybook-character
-description: Generate an original cyberpunk storybook character in a retro-futurist animation cel style from an object, animal, person, profession, mood, action, or combined phrase. Use for stylized cel-shaded sci-fi characters with integrated cybernetic details; output one isolated character on a pure-white PNG canvas.
+description: Generate an original cyberpunk storybook character in retro-futurist animation cel style from an object, animal, person, profession, mood, action, or combined phrase; output one isolated character on a white PNG canvas.
 ---
 
 # Cyberpunk Storybook Character
 
-Generate exactly one isolated, cyberpunk-inflected author-led storybook character in a retro-futurist animation cel style from the user's complete input. The default output is a cel-shaded 2.5D-style PNG image, not an actual 3D mesh or animation. If a model or turntable is explicitly requested, route to a capable 3D workflow and verify the requested asset or animation separately.
+Generate one original character per image using the fixed master prompt below. The result is a cel-shaded 2.5D-style PNG illustration, not a 3D model or animation; route explicit model or turntable requests to an appropriate 3D workflow.
 
-## Core invariant
+## Input and isolation
 
-Every generation must use:
+Treat the user's complete phrase as one concept, preserving explicit attributes. Split subjects only when separate images are explicitly requested; run the same prompt independently for each. Use only the current complete input and this Skill: do not use prior conversation, previous images, remembered palettes or inferred details. Do not use an image reference unless the user supplies it in the current request and explicitly asks to use it.
 
-1. The same master prompt below.
-2. Two changing fields: the user's exact `{{USER_INPUT}}` and a deterministic `{{PALETTE_DIRECTIVE}}` calculated from that input.
-3. A retro-futurist animation cel character with fine dark contours, clear flat color fields and two or three crisply separated cel-shadow shapes, with integrated cybernetic construction. Retain the original's distinctive storybook silhouette and understated expression; suggest depth through graphic planes, not photorealistic 3D.
+Change only `{{USER_INPUT}}` and its computed `{{PALETTE_DIRECTIVE}}` in the master prompt. Do not append subject-specific silhouettes, poses, anatomy, props, colors or other design solutions.
 
-Never add subject-specific design instructions, including proposed silhouette, pose, anatomy, negative-space solution, facial layout, prop placement, manually chosen color palette, or exaggeration method. The purpose of this Skill is to let the same artistic method discover a different structural answer for any input while the deterministic palette mechanism prevents repeated default colorways.
+## Deterministic palette
 
-## Deterministic palette mechanism
+Hash the exact UTF-8 bytes of `{{USER_INPUT}}` with SHA-256. Let A–E be the first five bytes as integers and calculate:
 
-Before every generation, calculate a palette directive from the exact UTF-8 bytes of `{{USER_INPUT}}`:
+- H1 = A × 360 // 256; H2 = (H1 + 47 + B % 127) % 360; H3 = (H2 + 47 + C % 127) % 360
+- S1 = 58 + D % 31; S2 = 52 + E % 35; S3 = 66 + B % 25
+- L1 = 36 + C % 29; L2 = 48 + D % 27; L3 = 42 + E % 31
 
-1. Compute SHA-256 of the exact input.
-2. Let `A`, `B`, `C`, `D`, and `E` be the decimal values of the first five hash bytes.
-3. Calculate:
-   - `H1 = A × 360 // 256`
-   - `H2 = (H1 + 47 + B % 127) % 360`
-   - `H3 = (H2 + 47 + C % 127) % 360`
-   - `S1 = 58 + D % 31`, `S2 = 52 + E % 35`, `S3 = 66 + B % 25`
-   - `L1 = 36 + C % 29`, `L2 = 48 + D % 27`, `L3 = 42 + E % 31`
-4. Fill `{{PALETTE_DIRECTIVE}}` with exactly:
+Replace the symbols in the following directive with the computed integers:
 
 ```text
 Use this computed one-run palette: dominant HSL(H1 S1% L1%), secondary HSL(H2 S2% L2%), accent HSL(H3 S3% L3%). Keep the dominant color visibly predominant and use the other two sparingly. These numeric colors are binding. Do not substitute a familiar default palette.
 ```
 
-5. Replace the symbols with the calculated integers before generation.
-6. If the user explicitly specifies one or more colors, those explicit colors remain binding; use the computed colors only for unspecified roles.
+Explicit user colors remain binding; use computed colors only for unspecified roles.
 
-## Context isolation
+## Generation
 
-Every invocation is context-independent.
-
-- Use only the user's current complete input and this Skill file.
-- Do not use prior conversation, earlier generations, prior assistant interpretations, remembered palettes, recently used shapes, or previous outputs as generation context.
-- Do not inspect, reference, compare with, imitate, or continue any image generated in an earlier invocation.
-- Do not add inferred details from earlier turns, even when the current input resembles a previous subject.
-- Do not use any image reference unless the user explicitly supplies one in the current request and explicitly asks for reference-based generation.
-
-## Input interpretation
-
-- Treat the user's entire phrase as one unified character concept.
-- Never split comma-separated keywords into multiple characters unless the user explicitly requests multiple separate outputs.
-- If the user explicitly lists several independent subjects and requests one image for each, run the identical master prompt separately for every subject, changing `{{USER_INPUT}}` and its computed `{{PALETTE_DIRECTIVE}}`.
-- Preserve explicit attributes in the input, such as color, species, profession, action, mood, or object type.
-- Express cyberpunk through purposeful features integrated into the character's structure, not a repeated accessory. Optional metallic highlights must remain subtle, graphic accents; avoid realistic reflections, clay-like surfaces and neon glass.
-
-## Generation settings
-
-Use `generate_image` with:
-
-- `aspect`: `1:1`
-- `size`: `4K`
-- no `ref`
-- one final PNG per subject under `/home/user/workspace/outputs/<task-name>/`
-
-The generated image must be a complete isolated character on an opaque, uniform pure-white (#FFFFFF) canvas. Never request a transparent background, background removal, or a simulated transparency checkerboard. Do not add grids, gray squares, off-white paper, or background texture.
-
-Do not mention SVG, vector, editable paths, icons, logos, or vectorization in the image-generation prompt. These words distort the visual language toward rigid vector mascots. Output PNG only by default. If true SVG is explicitly requested, treat it as a separate vector-production task and verify actual vector paths; never rename a PNG to .svg or embed a PNG in an SVG wrapper and describe it as vector artwork.
+Use `generate_image` with aspect `1:1`, size `4K`, no reference by default, and one final PNG per subject under `/home/user/workspace/outputs/<task-name>/`. When a reference is explicitly supplied and requested, use it for the requested reference-based generation. The character must be complete on an opaque, uniform pure-white (#FFFFFF) background, not transparency, a checkerboard or a textured backdrop. Do not put SVG, vector, editable paths, icons, logos or vectorization in the generation prompt. True SVG or actual 3D requests require separate capable workflows and verification; never label an embedded or renamed PNG as a vector asset.
 
 ## Master prompt
 
-Replace only `{{USER_INPUT}}` and `{{PALETTE_DIRECTIVE}}`. Do not modify, expand, paraphrase, or append subject-specific visual solutions.
+Replace only the two fields; do not modify the prompt or add subject-specific instructions.
 
 ```text
 Create one isolated original cyberpunk storybook character based only on this complete user input: “{{USER_INPUT}}”. Render it as a sophisticated retro-futurist animation character using traditional hand-painted animation cel aesthetics. Use confident, fine dark contour lines, broad flat color fields, and two or three crisply separated cel-shadow shapes. Suggest modest 2.5D depth through graphic planes rather than realistic rendering. Preserve an independent storybook artist's inventive shapes, quiet expression, and naturally humorous sensibility, infused with a clear, inventive cyberpunk identity. Do not derive anything from prior conversation, earlier images, remembered palettes, recently used shapes, or previous outputs.
@@ -87,25 +51,8 @@ Show exactly one complete, uncropped character centered with comfortable empty p
 Avoid cyberpunk cityscapes, night scenes, glowing halos, weapon-centric designs, generic sci-fi armor, and repeated accessory formulas. Avoid photorealism, full 3D figurine render, realistic 3D product photography, sculptural airbrushed shading over the whole body, neon glass, mirror chrome, harsh glare, excessive reflections, standardized mascot anatomy, identical round heads, default arms and legs, oversized glossy eyes, generic cute-cartoon styling, conventional species silhouettes when a more inventive but recognizable construction is possible, pasted-on surreal accessories, polished geometric symmetry, heavy black outlines, clay, plasticine, ceramic, rubber, vinyl-toy or waxy soft-plastic surfaces, fingerprints, muddy shading, stains, speckles, mottling, grain, distressed wear, or dirty overlays. The final image should feel immediately readable yet structurally surprising, like a distinctive cyberpunk character from an animated storybook.
 ```
 
-## Quality check
+## Verify and deliver
 
-Before delivery, verify:
+Check each output for one recognizable, complete character; inventive silhouette and integrated cybernetic details; fine dark contours, broad clean color fields, two or three crisp cel-shadow shapes, subdued expression and subtle graphic metallic accents; the computed palette, particularly its dominant hue; and an opaque, uniform pure-white (#FFFFFF) background with no shadow or scenery. Reject photorealistic, toy-like, clay-like, neon-glass, generic mascot or heavily reflective results.
 
-- Exactly one character per output.
-- Complete silhouette is visible and uncropped.
-- Canvas is opaque and uniformly pure white (#FFFFFF), with no checkerboard, grid, gray squares, transparency, off-white tint, texture, gradient, or shadow.
-- The requested subject remains immediately recognizable.
-- Structural imagination comes from silhouette, proportion, posture, integration, or negative space.
-- The character reads as a hand-painted animation cel: fine dark contours, broad flat color fields, and two or three crisp graphic shadow planes suggest modest depth. Reject photorealistic 3D, toy-like or clay-like rendering.
-- Cybernetic components or seams are visibly integrated into the subject's form. Optional metallic highlights are sparse graphic accents, not realistic chrome, glass or detailed physical texture.
-- Color areas are clean and vivid; cel shadows remain crisp and distinct without dirty or mottled texture.
-- The prompt contains the correctly calculated HSL directive for the exact current input.
-- The delivered image visibly follows the computed dominant hue rather than a familiar default palette.
-- Cyberpunk is visibly present in integrated futuristic construction and materials while the original storybook character language remains dominant; no default neon glass, generic repeated accessories, background halo, dark scene, or city background.
-- The result is not a generic cute mascot or rigid vector icon.
-
-If a result fails, rerun with the exact same master prompt and input. Do not repair it by adding subject-specific design instructions. If a repeated attempt still fails, report the specific limitation honestly; never describe an off-white background as strictly pure white or claim an unverified output property.
-
-## Delivery
-
-Deliver each PNG separately and describe it accurately as an animation-cel-style character image. Describe the background as pure white only after it passes the white-background check. Do not claim the PNG is a real 3D model, has transparency, background removal, SVG output, or vector editability. Never present a renamed PNG or an SVG containing an embedded bitmap as a true vector SVG.
+If any check fails, rerun with the exact same prompt and input without adding subject-specific instructions. If a repeat still fails, report the limitation honestly; do not call a near-white background pure white. Deliver each PNG separately as a cel-animation-style character image. Do not claim transparency, SVG, editable paths or 3D assets without separately verifying them.
